@@ -11,6 +11,17 @@
     --txt:#e8edf4; --muted:#7d8aa0; --accent:#23d18b; --accent2:#36a3ff;
     --warn:#ffb020; --bad:#ff5c5c; --line:#2a3444;
   }
+  body.light{
+    --bg:#eef1f6; --panel:#ffffff; --panel2:#e2e8f1; --txt:#0a0e14; --muted:#5a6678;
+    --line:#cdd6e2; --accent:#0a9e63; --accent2:#1565d8; --bad:#d23030; --warn:#b06f00;
+  }
+  body.big .speed-val{font-size:112px;}
+  body.big .speed-unit{font-size:20px;}
+  body.big .bigtime{font-size:40px; min-height:46px;}
+  body.big .btns button{font-size:19px; padding:20px 10px;}
+  body.big .row .lbl{font-size:16px;}
+  body.big .row .val{font-size:23px;}
+  body.big .sensors{font-size:14px;}
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; height:100%;}
   body{
@@ -63,11 +74,98 @@
   .hint b{color:var(--txt);}
   .status{text-align:center; font-size:14px; font-weight:600; margin:2px 0 4px; min-height:20px;}
   .status.armed{color:var(--accent2);} .status.run{color:var(--accent);} .status.done{color:var(--warn);} .status.cal{color:var(--warn);}
+
+  .q-ok{color:var(--accent);} .q-mid{color:var(--warn);} .q-bad{color:var(--bad);}
+  .qnotes{padding:2px 0 10px;}
+  .qn{font-size:13px; color:var(--muted); padding:3px 0; line-height:1.4;}
+
+  .topbar{display:flex; align-items:center; justify-content:center; position:relative; margin:4px 0 14px;}
+  .topbar h1{margin:0;}
+  .gear{position:absolute; right:0; top:50%; transform:translateY(-50%); width:38px; height:38px; padding:0;
+        border-radius:11px; background:var(--panel2); color:var(--txt); border:1px solid var(--line); font-size:18px; font-weight:400;}
+
+  .chip{display:none; justify-content:center; align-items:center; gap:6px; font-size:12px; font-weight:600;
+        color:var(--accent2); margin:-4px 0 12px; text-align:center;}
+  .chip.on{display:flex;}
+
+  .overlay{position:fixed; inset:0; background:rgba(4,7,12,.7); display:none; z-index:50;}
+  .overlay.open{display:block;}
+  .sheet{position:absolute; left:0; right:0; bottom:0; max-height:88%; overflow-y:auto; background:var(--bg);
+         border-top:1px solid var(--line); border-radius:20px 20px 0 0;
+         padding:18px 16px calc(28px + env(safe-area-inset-bottom)); max-width:560px; margin:0 auto;}
+  .sheet-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .sheet-head span{font-size:17px; font-weight:700;}
+  .xbtn{width:34px; height:34px; padding:0; border-radius:10px; background:var(--panel2); color:var(--txt); border:1px solid var(--line); font-size:15px;}
+
+  .set-row{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding:16px 0; border-bottom:1px solid var(--line);}
+  .set-title{font-size:15px; font-weight:600;}
+  .set-desc{font-size:12px; color:var(--muted); line-height:1.5; margin-top:5px;}
+  .set-sub{padding:14px 2px; transition:opacity .15s;}
+  .set-sub.off{opacity:.35; pointer-events:none;}
+  .seg{display:flex; gap:8px; margin-top:10px;}
+  .seg button{flex:1; padding:11px 6px; font-size:13px; background:var(--panel); color:var(--muted); border:1px solid var(--line); border-radius:10px; font-weight:600;}
+  .seg button.on{background:var(--panel2); color:var(--txt); border-color:var(--accent2);}
+
+  .switch{position:relative; display:inline-block; width:50px; height:30px; flex:none;}
+  .switch input{opacity:0; width:0; height:0;}
+  .slider{position:absolute; inset:0; background:var(--panel2); border:1px solid var(--line); border-radius:30px; transition:.2s; cursor:pointer;}
+  .slider:before{content:""; position:absolute; width:22px; height:22px; left:3px; top:3px; background:var(--muted); border-radius:50%; transition:.2s;}
+  .switch input:checked + .slider{background:rgba(35,209,139,.25); border-color:var(--accent);}
+  .switch input:checked + .slider:before{transform:translateX(20px); background:var(--accent);}
+
+  button.stop{background:var(--bad); color:#fff; animation:pulse 1.1s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{filter:brightness(1); box-shadow:0 0 0 rgba(255,92,92,0);} 50%{filter:brightness(1.2); box-shadow:0 0 16px rgba(255,92,92,.6);}}
+
+  .graph{margin:4px 0 14px;}
+  .gph{width:100%; height:auto; display:block;}
+  .gph-grid{stroke:var(--line); stroke-width:1;}
+  .gph-lbl{fill:var(--muted); font-size:9px;}
+  .gph-area{fill:var(--accent); opacity:.13; stroke:none;}
+  .gph-line{fill:none; stroke:var(--accent); stroke-width:2; stroke-linejoin:round; stroke-linecap:round;}
+  .gph-mark{stroke:var(--accent2); stroke-width:1; stroke-dasharray:3 3; opacity:.55;}
+  .gph-dot{fill:var(--accent2);}
+  .gph-empty{color:var(--muted); font-size:13px; text-align:center; padding:24px 0;}
+  .resinfo{margin-bottom:12px;}
+
+  .field{width:100%; padding:13px 14px; font-size:15px; background:var(--panel); color:var(--txt);
+         border:1px solid var(--line); border-radius:12px; margin-bottom:10px; font-family:inherit;}
+  .field::placeholder{color:var(--muted);}
+  .field-row{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .field-row .field{margin-bottom:0; flex:1;}
+  .field-unit{color:var(--muted); font-size:14px;}
+  .powerout{display:none; text-align:center; font-size:27px; font-weight:800; color:var(--accent); padding:6px 0 14px;}
+  .po-sub{display:block; font-size:12px; font-weight:500; color:var(--muted); margin-top:5px;}
+
+  .treebox .tree{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;}
+  .tlight{width:84px; height:84px; border-radius:50%; background:var(--panel2); border:2px solid var(--line); opacity:.22;}
+  .tlight.amber.lit{opacity:1; background:#ffb020; border-color:#ffb020; box-shadow:0 0 40px #ffb020;}
+  .tlight.green.lit{opacity:1; background:var(--accent); border-color:var(--accent); box-shadow:0 0 55px var(--accent);}
+  .tree-msg{margin-top:12px; font-size:24px; font-weight:800; color:var(--txt); letter-spacing:.06em;}
+
+  .editbtn{padding:11px 16px; border-radius:11px; background:var(--panel2); color:var(--txt); border:1px solid var(--accent2); font-size:14px; font-weight:600; flex:none;}
+  #tgtPresets{flex-wrap:wrap;}
+  #tgtPresets button{flex:1 1 40%;}
+  .tgtlist{margin-top:14px;}
+  .tgtrow{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+  .tin{width:74px; padding:11px 8px; text-align:center; background:var(--panel); color:var(--txt); border:1px solid var(--line); border-radius:10px; font-size:15px; font-family:inherit;}
+  .tin-wide{width:120px;}
+  .tdash{color:var(--muted); font-size:16px;}
+  .tunit{color:var(--muted); font-size:13px; flex:1;}
+  .tdel{width:36px; height:36px; padding:0; border-radius:9px; background:transparent; color:var(--bad); border:1px solid var(--line); font-size:13px; flex:none;}
+  .tgt-hint{font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:12px;}
+
+  .set-group{display:flex; align-items:center; gap:10px; margin:20px 0 0; font-size:12px; font-weight:700;
+             letter-spacing:.08em; text-transform:uppercase; color:var(--accent);}
+  .set-group::after{content:""; flex:1; height:1px; background:var(--line);}
+  .set-group:first-of-type{margin-top:6px;}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>GPS + Акселерометр · Разгон</h1>
+  <div class="topbar">
+    <h1>GPS + Акселерометр</h1>
+    <button class="gear" id="openSet" aria-label="Настройки">⚙</button>
+  </div>
 
   <div class="speedo">
     <div class="speed-val" id="speed">0</div>
@@ -91,6 +189,8 @@
     <button data-m="dist">Дистанция</button>
   </div>
 
+  <div class="chip" id="rolloutChip"></div>
+
   <div class="card" id="accelCard">
     <div class="row" data-k="0-60"><span class="lbl">0 – 60 км/ч</span><span class="val empty">—</span></div>
     <div class="row" data-k="0-100"><span class="lbl">0 – 100 км/ч</span><span class="val empty">—</span></div>
@@ -106,11 +206,131 @@
     <div class="row" data-k="vmax"><span class="lbl">Макс. скорость</span><span class="val empty">—</span></div>
   </div>
 
+  <div class="card" id="qualCard" style="display:none">
+    <div class="row"><span class="lbl">Достоверность замера</span><span class="val" id="qVerdict">—</span></div>
+    <div id="qNotes" class="qnotes"></div>
+  </div>
+
   <div class="hint">
     <b>Важно:</b> закрепи телефон в держателе (или положи так, чтобы он не двигался относительно машины).
     Нажми «Старт», подержи телефон неподвижно ~2 сек (калибровка), дождись зелёных индикаторов —
     замер стартует сам, как тронешься.<br>
     На айфоне разреши доступ к движению и геолокации во всплывающих окнах.
+  </div>
+
+  <div class="overlay" id="settings">
+    <div class="sheet">
+      <div class="sheet-head"><span>Настройки</span><button class="xbtn" id="closeSet">✕</button></div>
+
+      <div class="set-group">Эргономика</div>
+
+      <div class="set-sub" style="padding-top:8px">
+        <div class="set-title">Тема оформления</div>
+        <div class="seg" id="themeSeg">
+          <button data-th="dark">Тёмная</button>
+          <button data-th="light">Светлая (день)</button>
+        </div>
+      </div>
+
+      <div class="set-row">
+        <div>
+          <div class="set-title">Крупный режим</div>
+          <div class="set-desc">Увеличивает цифры скорости и времени — чтобы читать на солнце и боковым зрением за рулём.</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="setBig"><span class="slider"></span></label>
+      </div>
+
+      <div class="set-row">
+        <div>
+          <div class="set-title">Старт по светофору (дерево)</div>
+          <div class="set-desc">Вместо старта «когда удобно» после калибровки запускается драг-дерево: жёлтые с сигналом, затем зелёный — газ. Замеряет время реакции. Задержка зелёного случайная.</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="setTree"><span class="slider"></span></label>
+      </div>
+
+      <div class="set-row">
+        <div>
+          <div class="set-title">Голосовое объявление результата</div>
+          <div class="set-desc">После заезда телефон проговорит главный результат вслух — удобно, чтобы не смотреть на экран за рулём.</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="setVoice"><span class="slider"></span></label>
+      </div>
+
+      <div class="set-group">Функционал</div>
+
+      <div class="set-row">
+        <div>
+          <div class="set-title">Измерять уклон дороги</div>
+          <div class="set-desc">Оценивает наклон трассы (в горку / под гору) по акселерометру и показывает его в итогах заезда — чтобы понимать, почему время лучше или хуже.</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="setSlope"><span class="slider"></span></label>
+      </div>
+
+      <div class="set-row">
+        <div>
+          <div class="set-title">Точки замера</div>
+          <div class="set-desc">Свои пороги скорости (0-100, обгон 50-90…) и дистанции. Готовые шаблоны + ручная правка.</div>
+        </div>
+        <button class="editbtn" id="openTgt">Изменить</button>
+      </div>
+
+      <div class="set-row">
+        <div>
+          <div class="set-title">Rollout — поправка старта</div>
+          <div class="set-desc">Отсчёт времени начинается не с места, а после прокатки заданной дистанции — как на драг-стрипе. Время 0-100 станет чуть меньше и будет сопоставимо с журнальными замерами.</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="setRollout"><span class="slider"></span></label>
+      </div>
+
+      <div class="set-sub" id="rolloutDistWrap">
+        <div class="set-title">Дистанция прокатки</div>
+        <div class="seg" id="rolloutDist">
+          <button data-v="0.3048">1 фут · 0.30 м</button>
+          <button data-v="0.5">0.5 м</button>
+          <button data-v="1">1 м</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="result">
+    <div class="sheet">
+      <div class="sheet-head"><span id="resTitle">Результат заезда</span><button class="xbtn" id="closeRes">✕</button></div>
+      <input id="carName" class="field" placeholder="Название авто (напр. BMW E39)">
+      <div class="field-row">
+        <input id="carMass" class="field" type="number" inputmode="numeric" placeholder="Масса для расчёта л.с. (напр. 1500)">
+        <span class="field-unit">кг</span>
+      </div>
+      <div id="powerOut" class="powerout"></div>
+      <div id="resGraph" class="graph"></div>
+      <div id="resInfo" class="card resinfo"></div>
+      <button id="closeResBtn" style="width:100%;">Закрыть</button>
+    </div>
+  </div>
+
+  <div class="overlay treebox" id="tree">
+    <div class="tree">
+      <div class="tlight amber" id="t1"></div>
+      <div class="tlight amber" id="t2"></div>
+      <div class="tlight amber" id="t3"></div>
+      <div class="tlight green" id="tg"></div>
+      <div class="tree-msg" id="treeMsg">Приготовься…</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="targets">
+    <div class="sheet">
+      <div class="sheet-head"><span>Точки замера</span><button class="xbtn" id="closeTgt">✕</button></div>
+      <div class="tgt-hint">Выбери шаблон или задай свои значения. Для скорости: «откуда → докуда» (0 = с места).</div>
+      <div class="seg" id="tgtPresets"></div>
+      <div class="seg" id="tgtMode" style="margin-top:10px">
+        <button data-tm="speed" class="on">Скорость</button>
+        <button data-tm="dist">Дистанция</button>
+      </div>
+      <div id="tgtList" class="tgtlist"></div>
+      <button id="tgtAdd" class="sec" style="width:100%; margin-top:4px;">+ Добавить строку</button>
+      <button id="tgtSave" style="width:100%; margin-top:10px;">Готово</button>
+    </div>
   </div>
 </div>
 
@@ -121,14 +341,32 @@
   const speedEl=$("#speed"), bigEl=$("#bigtime"), statusEl=$("#status");
   const gpsdot=$("#gpsdot"), gpsinfo=$("#gpsinfo"), accdot=$("#accdot"), accinfo=$("#accinfo");
   const startBtn=$("#startBtn"), resetBtn=$("#resetBtn");
+  const qVerdict=$("#qVerdict"), qNotes=$("#qNotes"), qualCard=$("#qualCard");
 
   const KMH=3.6;
-  const SPEED_KMH=[60,100,200];
-  const DIST_M=[100,402,1000];
   const now=()=>performance.now();
 
   let mode="accel";
   let watchId=null, wakeLock=null;
+  let rollDist=0;
+
+  // --- настройки (#4 rollout и др.) ---
+  const DEF_SET={ rollout:false, rolloutM:0.3048, slope:false, carName:"", mass:"", voice:false, tree:false, theme:"dark", big:false };
+  let settings=(function(){
+    try{ return Object.assign({},DEF_SET,JSON.parse(localStorage.getItem("accelSettings")||"{}")); }
+    catch(e){ return Object.assign({},DEF_SET); }
+  })();
+  function saveSettings(){ try{ localStorage.setItem("accelSettings",JSON.stringify(settings)); }catch(e){} }
+  function distLabel(m){ return Math.abs(m-0.3048)<0.01 ? "1 фут" : (m+" м"); }
+
+  // цели замеров (#10)
+  if(!Array.isArray(settings.speedTargets)||!settings.speedTargets.length)
+    settings.speedTargets=[{from:0,to:60},{from:0,to:100},{from:60,to:100},{from:0,to:200},{from:100,to:200}];
+  if(!Array.isArray(settings.distTargets)||!settings.distTargets.length)
+    settings.distTargets=[100,402,1000];
+  function segKey(s){ return s.from+"-"+s.to; }
+  function segLabel(s){ return (s.from===0?"0":s.from)+" – "+s.to+" км/ч"; }
+  function distLabelM(m){ return m===402?"402 м (¼ мили)" : m===201?"201 м (⅛ мили)" : m===1609?"1609 м (миля)" : m+" м"; }
 
   // --- сенсор-фьюжн состояние ---
   let fusion=false;            // включён ли акселерометр
@@ -144,7 +382,17 @@
   let phase="idle";            // idle | cal | armed | run | done
   let calStart=0;
   let t0=0, distAcc=0, vmax=0, results={};
+  let crossings={0:0};   // время пересечения порогов скорости (#10)
   let lastDisp=0;
+  let samples=[], lastSample=0, peakV=0;   // запись графика скорости (#2)
+  let gravCal=null, lastSlope=NaN, runAltStart=NaN, runAltEnd=NaN;   // уклон (#6)
+  let calGx=0, calGy=0, calGz=0, calGn=0;
+  let actx=null, treeTimers=[], greenTime=0, reactT=NaN, treeActive=false;   // дерево (#9)
+
+  // --- качество замера (#5) ---
+  let q=null;
+  let calStd=0, calSum=0, calSumSq=0, calN=0;
+  function qReset(){ q={worstAcc:0, corrMax:0, gpsGaps:0, lastGpsT:0, peakG:0}; }
 
   function fmt(s){ return s.toFixed(2)+" с"; }
 
@@ -170,11 +418,15 @@
   }
 
   function resetMeasure(){
-    phase="idle"; t0=0; distAcc=0; vmax=0;
+    phase="idle"; t0=0; distAcc=0; vmax=0; rollDist=0;
     vVec={x:0,y:0,z:0}; speedMS=0;
+    samples=[]; peakV=0; lastSample=0;
+    lastSlope=NaN; runAltStart=NaN; runAltEnd=NaN;
+    clearTree(); if(treeEl) treeEl.classList.remove("open"); greenTime=0; reactT=NaN;
+    q=null; qualCard.style.display="none";
     clearResults();
     bigEl.textContent="нажми «Старт»"; bigEl.classList.add("idle");
-    setStatus(""); startBtn.textContent="Старт"; startBtn.classList.remove("live");
+    setStatus(""); startBtn.textContent="Старт"; startBtn.classList.remove("live","stop");
   }
 
   // ----- общий обработчик замера (вызывается на высокой частоте при фьюжне) -----
@@ -184,9 +436,19 @@
     if(tMs-lastDisp>80){ speedEl.textContent=Math.round(kmh); lastDisp=tMs; }
 
     if(phase==="armed"){
-      if(kmh>3){ phase="run"; t0=tMs; distAcc=0; vmax=0;
-        setStatus(mode==="accel"?"Замер разгона…":"Замер дистанции…","run");
-        startBtn.textContent="Идёт…";
+      if(kmh>2){ phase="launch"; rollDist=0; vmax=0; if(greenTime) reactT=(tMs-greenTime)/1000; }   // первое движение
+    }
+    else if(phase==="launch"){
+      if(kmh<1){ phase="armed"; }                        // не поехал / откатился назад
+      else {
+        if(dt>0 && dt<1) rollDist+=sp*dt;
+        const trig = settings.rollout ? (rollDist>=settings.rolloutM) : (kmh>3);
+        if(trig){ phase="run"; t0=tMs; distAcc=0; vmax=0; qReset();
+          samples=[]; lastSample=0; peakV=0; runAltStart=NaN; runAltEnd=NaN; crossings={0:0};
+          const sfx = settings.rollout ? " (rollout "+distLabel(settings.rolloutM)+")" : "";
+          setStatus((mode==="accel"?"Замер разгона…":"Замер дистанции…")+sfx,"run");
+          setStopBtn(true);
+        }
       }
     }
 
@@ -196,35 +458,273 @@
       if(sp>vmax) vmax=sp;
       if(dt>0 && dt<1) distAcc+=sp*dt;
 
+      // запись графика
+      if(tMs-lastSample>60){ samples.push({t:el, v:kmh}); lastSample=tMs; if(samples.length>1500) samples.shift(); }
+      // авто-стоп: скорость пошла вниз от пика (сброс газа)
+      if(kmh>peakV) peakV=kmh;
+      if(peakV>20 && kmh < peakV-6){ finishRun(mode==="accel"?"Готово · скорость падает":"Готово · сброс газа"); return; }
+
       if(mode==="accel"){
-        for(const thr of SPEED_KMH){
-          const k="0-"+thr;
-          if(kmh>=thr && results[k]==null){ results[k]=el; setResult(k,fmt(el),thr===100); }
+        // отмечаем пересечения всех нужных порогов
+        for(const s of settings.speedTargets){
+          if(s.from>0 && crossings[s.from]==null && kmh>=s.from) crossings[s.from]=el;
+          if(s.to>0   && crossings[s.to]==null   && kmh>=s.to)   crossings[s.to]=el;
         }
-        if(results["0-60"]!=null && results["0-100"]!=null && results["60-100"]==null){
-          const s=results["0-100"]-results["0-60"]; results["60-100"]=s; setResult("60-100",fmt(s));
+        // считаем сегменты from→to (from=0 → от старта)
+        for(const s of settings.speedTargets){
+          const k=segKey(s);
+          if(results[k]==null && crossings[s.from]!=null && crossings[s.to]!=null){
+            const val=crossings[s.to]-crossings[s.from];
+            results[k]=val; setResult(k,fmt(val), s.from===0&&s.to===100);
+          }
         }
-        if(results["0-100"]!=null && results["0-200"]!=null && results["100-200"]==null){
-          const s=results["0-200"]-results["0-100"]; results["100-200"]=s; setResult("100-200",fmt(s));
-        }
-        if(results["0-100"]!=null && kmh<5) finishRun("Готово · разгон");
+        if(settings.speedTargets.every(s=>results[segKey(s)]!=null) && kmh<5) finishRun("Готово · разгон");
       } else {
         if(kmh>5) setResult("vmax",Math.round(vmax*KMH)+" км/ч");
-        for(const dm of DIST_M){
+        for(const dm of settings.distTargets){
           const k="d"+dm;
           if(distAcc>=dm && results[k]==null){
             results[k]=el; setResult(k,fmt(el)+" · "+Math.round(kmh)+" км/ч",dm===402);
           }
         }
-        if(results["d1000"]!=null && kmh<5) finishRun("Готово · дистанция");
+        const maxD=Math.max.apply(null,settings.distTargets);
+        if(results["d"+maxD]!=null && kmh<5) finishRun("Готово · дистанция");
       }
     }
   }
 
-  function finishRun(reason){
+  function setStopBtn(on){
+    if(on){ startBtn.textContent="СТОП"; startBtn.classList.add("stop"); startBtn.classList.remove("live"); }
+    else { startBtn.textContent="Старт"; startBtn.classList.remove("stop","live"); }
+  }
+
+  function finishRun(reason,ok){
+    if(phase==="done") return;
+    if(t0) samples.push({t:(now()-t0)/1000, v:speedMS*KMH});
     phase="done"; setStatus(reason,"done");
-    startBtn.textContent="Старт"; startBtn.classList.remove("live");
+    setStopBtn(false);
+    // уклон дороги (#6)
+    lastSlope=NaN;
+    if(settings.slope){
+      if(fusion && gravCal){
+        const vm=Math.hypot(vVec.x,vVec.y,vVec.z), gm=Math.hypot(gravCal.x,gravCal.y,gravCal.z);
+        if(vm>2 && gm>5){
+          let s=(vVec.x*(-gravCal.x)+vVec.y*(-gravCal.y)+vVec.z*(-gravCal.z))/(vm*gm); // sin(уклона)
+          s=Math.max(-1,Math.min(1,s)); lastSlope=Math.asin(s)*180/Math.PI;
+        }
+      } else if(!fusion && !isNaN(runAltStart) && !isNaN(runAltEnd) && distAcc>50){
+        lastSlope=Math.atan((runAltEnd-runAltStart)/distAcc)*180/Math.PI;
+      }
+    }
     vVec={x:0,y:0,z:0};
+    if(ok===false){
+      qVerdict.textContent="Недостоверно";
+      qVerdict.className="val q-bad";
+      qNotes.innerHTML="<div class='qn'>Замер был прерван — данные неполные</div>";
+      qualCard.style.display="";
+    } else {
+      updateQuality(true);
+    }
+    if(samples.length>2){ showResult(ok!==false); if(ok!==false) announceResult(); }
+  }
+
+  // ----- окно результата с графиком (#2) -----
+  function sampleVat(tt){ let best=samples[0]; for(const s of samples){ if(Math.abs(s.t-tt)<Math.abs(best.t-tt)) best=s; } return best?best.v:0; }
+
+  function buildGraph(){
+    if(samples.length<2) return "<div class='gph-empty'>Нет данных для графика</div>";
+    const W=340,H=190,pl=30,pr=10,pt=14,pb=22;
+    const tMax=Math.max(samples[samples.length-1].t,0.1);
+    let vMax=10; for(const s of samples) if(s.v>vMax) vMax=s.v;
+    const vTop=Math.ceil(vMax/20)*20;
+    const X=t=>pl+(t/tMax)*(W-pl-pr);
+    const Y=v=>H-pb-(v/vTop)*(H-pt-pb);
+    const line="M"+samples.map(s=>X(s.t).toFixed(1)+" "+Y(s.v).toFixed(1)).join(" L");
+    const area=line+" L"+X(tMax).toFixed(1)+" "+Y(0).toFixed(1)+" L"+X(0).toFixed(1)+" "+Y(0).toFixed(1)+" Z";
+    let grid=""; const stepV=vTop>140?40:20;
+    for(let g=0; g<=vTop; g+=stepV){ const y=Y(g);
+      grid+=`<line x1="${pl}" y1="${y.toFixed(1)}" x2="${W-pr}" y2="${y.toFixed(1)}" class="gph-grid"/>`;
+      grid+=`<text x="${pl-4}" y="${(y+3).toFixed(1)}" class="gph-lbl" text-anchor="end">${g}</text>`;
+    }
+    let tlab="";
+    for(let i=0;i<=4;i++){ const tt=tMax*i/4, x=X(tt);
+      tlab+=`<text x="${x.toFixed(1)}" y="${H-6}" class="gph-lbl" text-anchor="middle">${tt.toFixed(1)}</text>`; }
+    let marks=[];
+    if(mode==="accel"){ settings.speedTargets.filter(s=>s.from===0).forEach(s=>{ const k=segKey(s); if(results[k]!=null) marks.push([results[k],""+s.to]); }); }
+    else { settings.distTargets.forEach(dm=>{ const k="d"+dm; if(results[k]!=null) marks.push([results[k],""+dm]); }); }
+    let mk="";
+    marks.forEach(p=>{ const x=X(p[0]);
+      mk+=`<line x1="${x.toFixed(1)}" y1="${pt}" x2="${x.toFixed(1)}" y2="${H-pb}" class="gph-mark"/>`;
+      mk+=`<circle cx="${x.toFixed(1)}" cy="${Y(sampleVat(p[0])).toFixed(1)}" r="3" class="gph-dot"/>`;
+    });
+    return `<svg viewBox="0 0 ${W} ${H}" class="gph" preserveAspectRatio="xMidYMid meet">${grid}<path d="${area}" class="gph-area"/><path d="${line}" class="gph-line"/>${mk}${tlab}</svg>`;
+  }
+
+  function slopeText(deg){
+    const pct=Math.tan(deg*Math.PI/180)*100;
+    const dir = deg>0.5?"в горку" : (deg<-0.5?"под гору":"ровно");
+    return (deg>0?"+":"")+deg.toFixed(1)+"° ("+(pct>0?"+":"")+pct.toFixed(1)+"%) · "+dir;
+  }
+
+  function buildInfo(){
+    const rows=[];
+    rows.push(["Время", new Date().toLocaleString("ru-RU")]);
+    rows.push(["Режим", mode==="accel"?"Разгон":"Дистанция"]);
+    if(settings.rollout) rows.push(["Rollout", distLabel(settings.rolloutM)]);
+    if(!isNaN(reactT)) rows.push(["Реакция (дерево)", (reactT<0?"фальстарт":reactT.toFixed(2)+" с")]);
+    if(mode==="accel"){
+      settings.speedTargets.forEach(s=>{ const k=segKey(s); if(results[k]!=null) rows.push([segLabel(s), results[k].toFixed(2)+" с"]); });
+    } else {
+      settings.distTargets.forEach(dm=>{ const k="d"+dm; if(results[k]!=null) rows.push([distLabelM(dm), results[k].toFixed(2)+" с"]); });
+    }
+    rows.push(["Макс. скорость", Math.round(peakV)+" км/ч"]);
+    rows.push(["Пройдено", distAcc>=1000 ? (distAcc/1000).toFixed(2)+" км" : Math.round(distAcc)+" м"]);
+    if(fusion && q) rows.push(["Пиковое ускорение", q.peakG.toFixed(2)+" g"]);
+    if(settings.slope) rows.push(["Уклон дороги", isNaN(lastSlope)?"нет данных":slopeText(lastSlope)]);
+    const mass=parseFloat(settings.mass);
+    if(settings.carName) rows.push(["Авто", settings.carName]);
+    if(mass>0) rows.push(["Масса", Math.round(mass)+" кг"]);
+    const pw=computePower(mass);
+    if(pw){ rows.push(["Мощность ≈", Math.round(pw.crankHp)+" л.с."]); rows.push(["На колёсах ≈", Math.round(pw.wheelHp)+" л.с."]); }
+    rows.push(["Достоверность", qVerdict.textContent]);
+    return rows.map(r=>`<div class="row"><span class="lbl">${r[0]}</span><span class="val">${r[1]}</span></div>`).join("");
+  }
+
+  // оценка мощности по кривой разгона (#7)
+  function computePower(mass){
+    if(!mass || mass<100 || samples.length<5) return null;
+    const rho=1.225, CdA=0.65, Crr=0.012, g=9.81;
+    const sinT = (settings.slope && !isNaN(lastSlope)) ? Math.sin(lastSlope*Math.PI/180) : 0;
+    const N=samples.length;
+    const vs=samples.map(s=>s.v/3.6), ts=samples.map(s=>s.t);
+    // сглаживание скорости (окно 5)
+    const sm=[];
+    for(let i=0;i<N;i++){ let a=0,c=0; for(let j=Math.max(0,i-2);j<=Math.min(N-1,i+2);j++){ a+=vs[j]; c++; } sm.push(a/c); }
+    const pw=[];
+    for(let i=1;i<N-1;i++){
+      const dt=ts[i+1]-ts[i-1];
+      if(dt<=0){ pw.push(0); continue; }
+      const acc=(sm[i+1]-sm[i-1])/dt, v=sm[i];
+      if(acc<=0){ pw.push(0); continue; }
+      const F = mass*acc + 0.5*rho*CdA*v*v + Crr*mass*g + mass*g*sinT;
+      pw.push(F*v);
+    }
+    let peakW=0;
+    for(let i=0;i<pw.length;i++){
+      const w=(pw[Math.max(0,i-1)]+pw[i]+pw[Math.min(pw.length-1,i+1)])/3; // лёгкое сглаживание
+      if(w>peakW) peakW=w;
+    }
+    if(peakW<=0) return null;
+    const wheelHp=peakW/745.7, crankHp=wheelHp/0.85;
+    return {wheelHp, crankHp};
+  }
+
+  function refreshResult(){
+    resInfo.innerHTML=buildInfo();
+    const p=computePower(parseFloat(settings.mass));
+    if(p){
+      powerOut.innerHTML="≈ "+Math.round(p.crankHp)+" л.с.<span class='po-sub'>на колёсах ~"+Math.round(p.wheelHp)+" · грубая оценка</span>";
+      powerOut.style.display="block";
+    } else { powerOut.style.display="none"; }
+  }
+
+  // голосовое объявление (#8)
+  function primeVoice(){
+    try{ if(!("speechSynthesis" in window)) return;
+      speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(" "); u.volume=0; u.lang="ru-RU"; speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  function speak(text){
+    try{ if(!("speechSynthesis" in window)) return;
+      speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(text); u.lang="ru-RU"; u.rate=1; u.pitch=1; u.volume=1;
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  function announceResult(){
+    if(!settings.voice) return;
+    const sec=v=>v.toFixed(1).replace(".",",");
+    let txt;
+    if(mode==="accel"){
+      const zero=settings.speedTargets.filter(s=>s.from===0 && results[segKey(s)]!=null).sort((a,b)=>b.to-a.to)[0];
+      const any=settings.speedTargets.find(s=>results[segKey(s)]!=null);
+      if(zero) txt="Ноль до "+zero.to+" за "+sec(results[segKey(zero)])+" секунд";
+      else if(any) txt="С "+any.from+" до "+any.to+" за "+sec(results[segKey(any)])+" секунд";
+      else txt="Максимальная скорость "+Math.round(peakV)+" километров в час";
+    } else {
+      const done=settings.distTargets.filter(dm=>results["d"+dm]!=null).sort((a,b)=>b-a)[0];
+      if(done) txt=done+" метров за "+sec(results["d"+done])+" секунд";
+      else txt="Максимальная скорость "+Math.round(peakV)+" километров в час";
+    }
+    speak(txt);
+  }
+
+  // дерево / светофор (#9)
+  function primeAudio(){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==="suspended") actx.resume(); }catch(e){} }
+  function beep(freq,ms){
+    try{ if(!actx) return;
+      const o=actx.createOscillator(), g=actx.createGain();
+      o.type="sine"; o.frequency.value=freq; o.connect(g); g.connect(actx.destination);
+      const t=actx.currentTime;
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(0.4,t+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+ms/1000);
+      o.start(t); o.stop(t+ms/1000+0.03);
+    }catch(e){}
+  }
+  function clearTree(){ treeTimers.forEach(clearTimeout); treeTimers=[]; treeActive=false; }
+  function runTree(){
+    treeActive=true; greenTime=0; reactT=NaN;
+    ["t1","t2","t3","tg"].forEach(id=>$("#"+id).classList.remove("lit"));
+    treeMsg.textContent="Приготовься…";
+    treeEl.classList.add("open");
+    const base=1000+Math.random()*1500;   // случайная задержка перед жёлтыми
+    const add=(t,fn)=>treeTimers.push(setTimeout(fn,t));
+    add(base,      ()=>{ $("#t1").classList.add("lit"); beep(700,90); });
+    add(base+600,  ()=>{ $("#t2").classList.add("lit"); beep(700,90); });
+    add(base+1200, ()=>{ $("#t3").classList.add("lit"); beep(700,90); });
+    add(base+1800, ()=>{ $("#tg").classList.add("lit"); beep(1150,260); treeMsg.textContent="ГАЗ!";
+                         greenTime=now(); phase="armed"; setStatus("Зелёный — ГАЗ!","run"); });
+    add(base+3300, ()=>{ treeEl.classList.remove("open"); });
+  }
+
+  function showResult(ok){
+    resTitle.textContent = ok ? "Результат заезда" : "Заезд прерван";
+    resGraph.innerHTML = buildGraph();
+    carNameEl.value=settings.carName||"";
+    carMassEl.value=settings.mass||"";
+    refreshResult();
+    resultEl.classList.add("open");
+  }
+
+  function updateQuality(){
+    if(!q) return;
+    let score=100; const notes=[];
+    // GPS
+    if(q.worstAcc>25){ score-=40; notes.push("✕ Слабый GPS (±"+Math.round(q.worstAcc)+" м)"); }
+    else if(q.worstAcc>15){ score-=20; notes.push("△ Средний GPS (±"+Math.round(q.worstAcc)+" м)"); }
+    else if(q.worstAcc>0){ notes.push("✓ GPS точный (±"+Math.round(q.worstAcc)+" м)"); }
+    if(q.gpsGaps>0){ score-=15; notes.push("△ Пропуски сигнала GPS ("+q.gpsGaps+")"); }
+    if(fusion){
+      if(q.corrMax>0.40){ score-=30; notes.push("✕ GPS и акселерометр сильно расходятся"); }
+      else if(q.corrMax>0.22){ score-=15; notes.push("△ Заметное расхождение датчиков"); }
+      else { notes.push("✓ GPS и акселерометр согласованы"); }
+      if(calStd>0.6){ score-=20; notes.push("✕ Тряска при калибровке — закрепи телефон жёстче"); }
+      else if(calStd>0.3){ score-=10; notes.push("△ Лёгкая тряска на калибровке"); }
+      if(q.peakG>1.5){ score-=10; notes.push("△ Резкие толчки (кочки/болтанка телефона)"); }
+    } else {
+      score-=20; notes.push("△ Режим «только GPS» — точность ограничена");
+    }
+    score=Math.max(0,Math.min(100,score));
+    let verdict,cls;
+    if(score>=80){ verdict="Высокая"; cls="ok"; }
+    else if(score>=55){ verdict="Средняя"; cls="mid"; }
+    else { verdict="Низкая"; cls="bad"; }
+    qVerdict.textContent=verdict+" · "+score+"%";
+    qVerdict.className="val q-"+cls;
+    qNotes.innerHTML=notes.map(n=>"<div class='qn'>"+n+"</div>").join("");
+    qualCard.style.display="";
   }
 
   // ----- акселерометр -----
@@ -248,17 +748,26 @@
     // калибровка: держим скорость в нуле, копим baseline гравитации
     if(phase==="cal"){
       vVec={x:0,y:0,z:0};
-      if(t-calStart>1500){ phase="armed"; setStatus("Готов — тронься с места","armed"); startBtn.textContent="Готов…"; }
+      const m=Math.hypot(lin.x,lin.y,lin.z); calSum+=m; calSumSq+=m*m; calN++;
+      if(accG && accG.x!=null){ calGx+=accG.x; calGy+=accG.y; calGz+=accG.z; calGn++; }
+      if(t-calStart>1500){
+        const mean=calN?calSum/calN:0;
+        calStd=Math.sqrt(Math.max(0,(calN?calSumSq/calN:0)-mean*mean));
+        gravCal = calGn>5 ? {x:calGx/calGn, y:calGy/calGn, z:calGz/calGn} : null;
+        if(settings.tree){ phase="tree"; startBtn.textContent="Светофор…"; runTree(); }
+        else { phase="armed"; setStatus("Готов — тронься с места","armed"); startBtn.textContent="Готов…"; }
+      }
       speedEl.textContent="0";
       return;
     }
-    if(phase!=="run" && phase!=="armed"){ vVec={x:0,y:0,z:0}; return; }
+    if(phase!=="run" && phase!=="armed" && phase!=="launch" && phase!=="tree"){ vVec={x:0,y:0,z:0}; return; }
 
     if(dt>0){
       vVec.x+=lin.x*dt; vVec.y+=lin.y*dt; vVec.z+=lin.z*dt;
     }
     const sp=Math.hypot(vVec.x,vVec.y,vVec.z);
     process(sp,t,dt);
+    if(phase==="run" && q){ const g=Math.hypot(lin.x,lin.y,lin.z)/9.81; if(g>q.peakG) q.peakG=g; }
   }
 
   function setAcc(ok){
@@ -283,18 +792,34 @@
     gpsdot.className="dot "+cls;
     gpsinfo.textContent="GPS "+w+" ±"+Math.round(gpsAcc)+"м";
 
+    // метрики качества (#5)
+    if(phase==="run" && q){
+      q.worstAcc=Math.max(q.worstAcc, gpsAcc);
+      if(q.lastGpsT>0 && (cur.t-q.lastGpsT)>2500) q.gpsGaps++;
+      q.lastGpsT=cur.t;
+    }
+    // высота для уклона на чистом GPS (#6)
+    if(phase==="run" && settings.slope && !fusion && c.altitude!=null && !isNaN(c.altitude)){
+      if(isNaN(runAltStart)) runAltStart=c.altitude;
+      runAltEnd=c.altitude;
+    }
+
     if(fusion){
+      if((phase==="armed"||phase==="tree") && s<0.6){ vVec.x*=0.2; vVec.y*=0.2; vVec.z*=0.2; } // гасим дрейф на стоянке
       // коррекция величины вектора скорости по GPS (убираем дрейф интегрирования)
       if(phase==="run"){
         const mag=Math.hypot(vVec.x,vVec.y,vVec.z);
+        if(q){ const rel=Math.abs(s-mag)/Math.max(s,2); if(rel>q.corrMax) q.corrMax=rel; }
         if(s<0.8){ vVec={x:0,y:0,z:0}; }
         else if(mag>0.05){ const nm=mag+0.2*(s-mag), k=nm/mag; vVec.x*=k; vVec.y*=k; vVec.z*=k; }
         else { vVec={x:s,y:0,z:0}; }
+        updateQuality();
       }
     } else {
       // без акселерометра — старый путь, считаем прямо по GPS
       let dt=0; if(onFix._last) dt=(cur.t-onFix._last.t)/1000;
       process(s,cur.t,dt);
+      if(phase==="run") updateQuality();
     }
     onFix._last=cur;
   }
@@ -331,16 +856,49 @@
   async function requestWake(){
     try{ if("wakeLock" in navigator) wakeLock=await navigator.wakeLock.request("screen"); }catch(e){}
   }
-  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&watchId!==null) requestWake(); });
+
+  // --- защита от сворачивания (#13) ---
+  // В вебе датчики в фоне не работают, поэтому: активный замер при сворачивании
+  // помечаем прерванным, а на возврате чисто переинициализируем тайминги.
+  function pageHidden(){
+    if(phase==="run"){
+      finishRun("⚠ Замер прерван — приложение свернулось", false);
+    } else if(phase==="cal" || phase==="armed" || phase==="launch" || phase==="tree"){
+      clearTree(); treeEl.classList.remove("open");
+      phase="idle"; vVec={x:0,y:0,z:0};
+      setStatus("Свёрнуто — нажми «Старт» заново","done");
+      startBtn.textContent="Старт"; startBtn.classList.remove("live");
+    }
+  }
+  function pageVisible(){
+    if(watchId!==null) requestWake();
+    lastMotionT=now();   // чтобы dt после паузы не взорвал интегрирование
+    onFix._last=null;    // сброс GPS-дельты после паузы
+  }
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="hidden") pageHidden(); else pageVisible();
+  });
+  window.addEventListener("pagehide", pageHidden); // iOS Safari надёжнее ловит это
+
+  // предупреждать при попытке уйти со страницы во время замера
+  window.addEventListener("beforeunload",(e)=>{
+    if(phase==="run"||phase==="armed"||phase==="cal"||phase==="launch"||phase==="tree"){ e.preventDefault(); e.returnValue=""; }
+  });
 
   // ----- кнопки -----
   startBtn.addEventListener("click", async ()=>{
+    if(phase==="run"||phase==="launch"){ finishRun("Остановлено вручную"); return; }
+    if(phase==="tree"||phase==="cal"){ resetMeasure(); return; }   // отмена отсчёта
+    if(settings.voice) primeVoice();
+    if(settings.tree) primeAudio();
     startGPS();
     await ensureMotion();
     resetMeasure();
     if(fusion){
       motionAlive=false;
       phase="cal"; calStart=now(); grav=null; vVec={x:0,y:0,z:0};
+      calSum=0; calSumSq=0; calN=0; calStd=0;
+      calGx=0; calGy=0; calGz=0; calGn=0; gravCal=null;
       bigEl.textContent="0.00 с"; bigEl.classList.remove("idle");
       setStatus("Калибровка — держи неподвижно…","cal");
       startBtn.textContent="Калибровка…"; startBtn.classList.add("live");
@@ -369,6 +927,143 @@
       resetMeasure();
     });
   });
+
+  // ----- панель настроек -----
+  const settingsEl=$("#settings"), openSet=$("#openSet"), closeSet=$("#closeSet");
+  const setRollout=$("#setRollout"), rolloutDistWrap=$("#rolloutDistWrap"), rolloutDistSeg=$("#rolloutDist");
+  const rolloutChip=$("#rolloutChip"), setSlope=$("#setSlope"), setVoice=$("#setVoice"), setTree=$("#setTree");
+  const themeSeg=$("#themeSeg"), setBig=$("#setBig");
+
+  function applySettingsUI(){
+    setRollout.checked=settings.rollout;
+    setSlope.checked=settings.slope;
+    setVoice.checked=settings.voice;
+    setTree.checked=settings.tree;
+    setBig.checked=settings.big;
+    document.body.classList.toggle("light", settings.theme==="light");
+    document.body.classList.toggle("big", settings.big);
+    themeSeg.querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.th===settings.theme));
+    const tc=document.querySelector('meta[name=theme-color]'); if(tc) tc.content = settings.theme==="light"?"#eef1f6":"#0a0e14";
+    rolloutDistWrap.classList.toggle("off",!settings.rollout);
+    rolloutDistSeg.querySelectorAll("button").forEach(b=>{
+      b.classList.toggle("on", Math.abs(parseFloat(b.dataset.v)-settings.rolloutM)<0.001);
+    });
+    rolloutChip.textContent="⚑ Rollout · "+distLabel(settings.rolloutM);
+    rolloutChip.classList.toggle("on", settings.rollout);
+  }
+  openSet.addEventListener("click",()=>settingsEl.classList.add("open"));
+  closeSet.addEventListener("click",()=>settingsEl.classList.remove("open"));
+  settingsEl.addEventListener("click",e=>{ if(e.target===settingsEl) settingsEl.classList.remove("open"); });
+  setRollout.addEventListener("change",()=>{ settings.rollout=setRollout.checked; saveSettings(); applySettingsUI(); });
+  setSlope.addEventListener("change",()=>{ settings.slope=setSlope.checked; saveSettings(); applySettingsUI(); });
+  setVoice.addEventListener("change",()=>{ settings.voice=setVoice.checked; saveSettings(); applySettingsUI(); if(settings.voice){ primeVoice(); speak("Голос включён"); } });
+  setTree.addEventListener("change",()=>{ settings.tree=setTree.checked; saveSettings(); applySettingsUI(); });
+  setBig.addEventListener("change",()=>{ settings.big=setBig.checked; saveSettings(); applySettingsUI(); });
+  themeSeg.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return; settings.theme=b.dataset.th; saveSettings(); applySettingsUI(); });
+  rolloutDistSeg.querySelectorAll("button").forEach(b=>{
+    b.addEventListener("click",()=>{ settings.rolloutM=parseFloat(b.dataset.v); saveSettings(); applySettingsUI(); });
+  });
+  applySettingsUI();
+
+  // ----- рендер карточек замеров из настроек (#10) -----
+  const accelCardEl=$("#accelCard"), distCardEl=$("#distCard");
+  function renderTargetRows(){
+    accelCardEl.innerHTML = settings.speedTargets.map(s=>
+      `<div class="row" data-k="${segKey(s)}"><span class="lbl">${segLabel(s)}</span><span class="val empty">—</span></div>`).join("");
+    distCardEl.innerHTML = settings.distTargets.map(dm=>
+      `<div class="row" data-k="d${dm}"><span class="lbl">${distLabelM(dm)}</span><span class="val empty">—</span></div>`).join("")
+      + `<div class="row" data-k="vmax"><span class="lbl">Макс. скорость</span><span class="val empty">—</span></div>`;
+  }
+  renderTargetRows();
+
+  // ----- редактор точек замера (#10) -----
+  const PRESETS={
+    speed:{
+      "Стандарт":[[0,60],[0,100],[60,100],[0,200],[100,200]],
+      "Обгонный":[[60,100],[80,120],[100,140],[50,90]],
+      "Город":[[0,40],[0,60],[0,80]],
+      "Спорт":[[0,100],[0,200],[0,300],[100,200],[200,300]]
+    },
+    dist:{
+      "Стандарт":[100,402,1000],
+      "⅛ мили":[60,201,402],
+      "Длинные":[402,1000,1609]
+    }
+  };
+  const targetsEl=$("#targets"), tgtPresetsEl=$("#tgtPresets"), tgtModeEl=$("#tgtMode"), tgtListEl=$("#tgtList");
+  let tgtEdit=null, tgtMode="speed";
+
+  function renderPresets(){
+    tgtPresetsEl.innerHTML=Object.keys(PRESETS[tgtMode]).map(n=>`<button data-p="${n}">${n}</button>`).join("");
+  }
+  function renderTgtList(){
+    tgtModeEl.querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.tm===tgtMode));
+    renderPresets();
+    let h="";
+    if(tgtMode==="speed"){
+      tgtEdit.speed.forEach((s,i)=>{ h+=
+        `<div class="tgtrow">
+          <input class="tin" type="number" inputmode="numeric" value="${s.from}" data-i="${i}" data-f="from">
+          <span class="tdash">→</span>
+          <input class="tin" type="number" inputmode="numeric" value="${s.to}" data-i="${i}" data-f="to">
+          <span class="tunit">км/ч</span>
+          <button class="tdel" data-i="${i}">✕</button>
+        </div>`; });
+    } else {
+      tgtEdit.dist.forEach((m,i)=>{ h+=
+        `<div class="tgtrow">
+          <input class="tin tin-wide" type="number" inputmode="numeric" value="${m}" data-i="${i}" data-f="m">
+          <span class="tunit">метров</span>
+          <button class="tdel" data-i="${i}">✕</button>
+        </div>`; });
+    }
+    tgtListEl.innerHTML=h;
+  }
+  function openTargets(){
+    tgtEdit={ speed: settings.speedTargets.map(s=>({from:s.from,to:s.to})), dist: settings.distTargets.slice() };
+    tgtMode="speed"; renderTgtList(); targetsEl.classList.add("open");
+  }
+  $("#openTgt").addEventListener("click", openTargets);
+  $("#closeTgt").addEventListener("click",()=>targetsEl.classList.remove("open"));
+  targetsEl.addEventListener("click",e=>{ if(e.target===targetsEl) targetsEl.classList.remove("open"); });
+  tgtModeEl.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return; tgtMode=b.dataset.tm; renderTgtList(); });
+  tgtPresetsEl.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return;
+    const p=PRESETS[tgtMode][b.dataset.p];
+    if(tgtMode==="speed") tgtEdit.speed=p.map(a=>({from:a[0],to:a[1]})); else tgtEdit.dist=p.slice();
+    renderTgtList();
+  });
+  tgtListEl.addEventListener("input",e=>{ const inp=e.target; if(!inp.classList.contains("tin"))return;
+    const i=+inp.dataset.i, f=inp.dataset.f, v=Math.max(0,parseInt(inp.value)||0);
+    if(tgtMode==="speed") tgtEdit.speed[i][f]=v; else tgtEdit.dist[i]=v;
+  });
+  tgtListEl.addEventListener("click",e=>{ const b=e.target.closest(".tdel"); if(!b)return;
+    const i=+b.dataset.i;
+    if(tgtMode==="speed") tgtEdit.speed.splice(i,1); else tgtEdit.dist.splice(i,1);
+    renderTgtList();
+  });
+  $("#tgtAdd").addEventListener("click",()=>{
+    if(tgtMode==="speed") tgtEdit.speed.push({from:0,to:100}); else tgtEdit.dist.push(100);
+    renderTgtList();
+  });
+  $("#tgtSave").addEventListener("click",()=>{
+    let sp=tgtEdit.speed.filter(s=>s.to>0 && s.to>s.from && s.from>=0);
+    let ds=tgtEdit.dist.filter(m=>m>0).sort((a,b)=>a-b);
+    if(!sp.length) sp=[{from:0,to:100}];
+    if(!ds.length) ds=[100];
+    settings.speedTargets=sp; settings.distTargets=ds; saveSettings();
+    renderTargetRows(); resetMeasure(); targetsEl.classList.remove("open");
+  });
+
+  // ----- окно результата -----
+  const resultEl=$("#result"), resTitle=$("#resTitle"), resGraph=$("#resGraph"), resInfo=$("#resInfo");
+  const carNameEl=$("#carName"), carMassEl=$("#carMass"), powerOut=$("#powerOut");
+  const treeEl=$("#tree"), treeMsg=$("#treeMsg");
+  treeEl.addEventListener("click",()=>{ if(greenTime===0){ resetMeasure(); } });
+  $("#closeRes").addEventListener("click",()=>resultEl.classList.remove("open"));
+  $("#closeResBtn").addEventListener("click",()=>resultEl.classList.remove("open"));
+  resultEl.addEventListener("click",e=>{ if(e.target===resultEl) resultEl.classList.remove("open"); });
+  carNameEl.addEventListener("input",()=>{ settings.carName=carNameEl.value; saveSettings(); refreshResult(); });
+  carMassEl.addEventListener("input",()=>{ settings.mass=carMassEl.value; saveSettings(); refreshResult(); });
 
   setAcc(false);
   startGPS(); // прогрев GPS сразу
