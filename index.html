@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e14">
+<title>GPS Замер разгона</title>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#141a24; --panel2:#1c2533;
+    --txt:#e8edf4; --muted:#7d8aa0; --accent:#23d18b; --accent2:#36a3ff;
+    --warn:#ffb020; --bad:#ff5c5c; --line:#2a3444;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; height:100%;}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    overscroll-behavior:none;
+  }
+  .wrap{max-width:560px; margin:0 auto; padding:14px 14px 40px;}
+  h1{font-size:15px; font-weight:600; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; margin:4px 0 14px; text-align:center;}
+
+  .speedo{
+    background:radial-gradient(120% 120% at 50% 0%, var(--panel2), var(--panel));
+    border:1px solid var(--line); border-radius:22px; padding:22px 16px 18px;
+    text-align:center; position:relative; overflow:hidden;
+  }
+  .speed-val{font-size:84px; font-weight:800; line-height:.95; letter-spacing:-.03em; font-variant-numeric:tabular-nums;}
+  .speed-unit{font-size:16px; color:var(--muted); font-weight:600; margin-top:2px;}
+  .bigtime{font-size:26px; font-weight:700; color:var(--accent); margin-top:8px; font-variant-numeric:tabular-nums; min-height:32px;}
+  .bigtime.idle{color:var(--muted); font-weight:500; font-size:15px;}
+
+  .gps{display:flex; align-items:center; justify-content:center; gap:8px; margin-top:12px; font-size:12px; color:var(--muted);}
+  .dot{width:9px; height:9px; border-radius:50%; background:var(--bad); box-shadow:0 0 8px currentColor;}
+  .dot.ok{background:var(--accent);} .dot.mid{background:var(--warn);}
+
+  .btns{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0;}
+  button{
+    border:none; border-radius:14px; padding:15px 10px; font-size:15px; font-weight:700;
+    color:#06121c; background:var(--accent); cursor:pointer; transition:filter .1s, transform .05s;
+  }
+  button:active{transform:scale(.98);}
+  button.sec{background:var(--panel2); color:var(--txt); border:1px solid var(--line);}
+  button:disabled{opacity:.4; pointer-events:none;}
+  button.live{filter:brightness(1.05);}
+
+  .mode{display:flex; gap:8px; margin-bottom:12px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:4px;}
+  .mode button{flex:1; padding:9px; font-size:13px; background:transparent; color:var(--muted); border-radius:9px;}
+  .mode button.on{background:var(--panel2); color:var(--txt);}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:6px 16px; margin-bottom:12px;}
+  .row{display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums;}
+  .row:last-child{border-bottom:none;}
+  .row .lbl{color:var(--muted); font-size:14px;}
+  .row .val{font-size:19px; font-weight:700;}
+  .row .val.empty{color:var(--muted); font-weight:400; font-size:15px;}
+  .row.hit .val{color:var(--accent);}
+
+  .hint{font-size:12px; color:var(--muted); line-height:1.5; text-align:center; margin-top:14px;}
+  .status{text-align:center; font-size:13px; font-weight:600; margin:2px 0 4px; min-height:18px;}
+  .status.armed{color:var(--accent2);} .status.run{color:var(--accent);} .status.done{color:var(--warn);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GPS · Замер разгона</h1>
+
+  <div class="speedo">
+    <div class="speed-val" id="speed">0</div>
+    <div class="speed-unit">км/ч</div>
+    <div class="bigtime idle" id="bigtime">нажми «Старт» и поезжай</div>
+    <div class="gps">
+      <span class="dot" id="gpsdot"></span>
+      <span id="gpsinfo">GPS не запущен</span>
+    </div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="btns">
+    <button id="startBtn">Старт</button>
+    <button id="resetBtn" class="sec">Сброс</button>
+  </div>
+
+  <div class="mode" id="mode">
+    <button data-m="accel" class="on">Разгон</button>
+    <button data-m="dist">Дистанция</button>
+  </div>
+
+  <div class="card" id="accelCard">
+    <div class="row" data-k="0-60"><span class="lbl">0 – 60 км/ч</span><span class="val empty">—</span></div>
+    <div class="row" data-k="0-100"><span class="lbl">0 – 100 км/ч</span><span class="val empty">—</span></div>
+    <div class="row" data-k="60-100"><span class="lbl">60 – 100 км/ч</span><span class="val empty">—</span></div>
+    <div class="row" data-k="0-200"><span class="lbl">0 – 200 км/ч</span><span class="val empty">—</span></div>
+    <div class="row" data-k="100-200"><span class="lbl">100 – 200 км/ч</span><span class="val empty">—</span></div>
+  </div>
+
+  <div class="card" id="distCard" style="display:none">
+    <div class="row" data-k="d100"><span class="lbl">100 м</span><span class="val empty">—</span></div>
+    <div class="row" data-k="d402"><span class="lbl">402 м (1/4 мили)</span><span class="val empty">—</span></div>
+    <div class="row" data-k="d1000"><span class="lbl">1000 м</span><span class="val empty">—</span></div>
+    <div class="row" data-k="vmax"><span class="lbl">Макс. скорость</span><span class="val empty">—</span></div>
+  </div>
+
+  <div class="hint">
+    Разреши доступ к геолокации. Положи телефон неподвижно, дождись зелёного индикатора GPS,
+    нажми «Старт» — замер начнётся сам, как только тронешься с места.<br>
+    Точность зависит от GPS телефона; делай 2-3 заезда и бери лучший.
+  </div>
+</div>
+
+<script>
+"use strict";
+(function(){
+  const $ = s => document.querySelector(s);
+  const speedEl = $("#speed"), bigEl = $("#bigtime"), statusEl = $("#status");
+  const gpsdot = $("#gpsdot"), gpsinfo = $("#gpsinfo");
+  const startBtn = $("#startBtn"), resetBtn = $("#resetBtn");
+
+  const KMH = 3.6;            // m/s -> km/h
+  const SPEED_KMH = [60,100,200];   // пороги для разгона
+  const DIST_M = [100,402,1000];
+
+  let watchId = null, wakeLock = null;
+  let mode = "accel";
+
+  // состояние замера
+  let armed = false;          // ждём старта движения
+  let running = false;        // замер идёт
+  let t0 = 0;                 // время старта (мс)
+  let lastFix = null;         // предыдущая точка
+  let distAcc = 0;            // накопленная дистанция (м)
+  let vmax = 0;               // макс скорость м/с
+  let results = {};           // ключ -> секунды/строка
+
+  function fmt(sec){ return sec.toFixed(2) + " с"; }
+
+  function setStatus(text, cls){
+    statusEl.textContent = text || "";
+    statusEl.className = "status" + (cls ? " " + cls : "");
+  }
+
+  function setResult(key, text, hit){
+    const row = document.querySelector('.row[data-k="'+key+'"]');
+    if(!row) return;
+    const v = row.querySelector(".val");
+    v.textContent = text;
+    v.classList.remove("empty");
+    if(hit) row.classList.add("hit");
+  }
+
+  function clearResults(){
+    results = {};
+    document.querySelectorAll(".row").forEach(r=>{
+      r.classList.remove("hit");
+      const v = r.querySelector(".val");
+      v.textContent = "—"; v.classList.add("empty");
+    });
+  }
+
+  // расстояние между координатами, метры (haversine)
+  function haversine(a, b){
+    const R = 6371000, toRad = d=>d*Math.PI/180;
+    const dLat = toRad(b.lat-a.lat), dLon = toRad(b.lon-a.lon);
+    const la1 = toRad(a.lat), la2 = toRad(b.lat);
+    const h = Math.sin(dLat/2)**2 + Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;
+    return 2*R*Math.asin(Math.sqrt(h));
+  }
+
+  function resetMeasure(){
+    armed = false; running = false; t0 = 0; lastFix = null;
+    distAcc = 0; vmax = 0;
+    clearResults();
+    bigEl.textContent = "нажми «Старт» и поезжай";
+    bigEl.classList.add("idle");
+    setStatus("");
+    startBtn.textContent = "Старт";
+    startBtn.classList.remove("live");
+  }
+
+  function arm(){
+    clearResults();
+    armed = true; running = false; t0 = 0; lastFix = null;
+    distAcc = 0; vmax = 0;
+    bigEl.textContent = "0.00 с";
+    bigEl.classList.remove("idle");
+    setStatus("Готов — тронься с места", "armed");
+    startBtn.textContent = "Готов…";
+    startBtn.classList.add("live");
+  }
+
+  function beginRun(now){
+    running = true; armed = false; t0 = now; distAcc = 0;
+    setStatus(mode==="accel" ? "Замер разгона…" : "Замер дистанции…", "run");
+  }
+
+  function finishRun(reason){
+    running = false; armed = false;
+    setStatus(reason || "Замер завершён", "done");
+    startBtn.textContent = "Старт";
+    startBtn.classList.remove("live");
+  }
+
+  function onFix(pos){
+    const c = pos.coords;
+    const now = pos.timestamp || Date.now();
+    const acc = c.accuracy; // метры (горизонтальная точность)
+
+    // скорость: берём с GPS-чипа, если есть; иначе считаем по перемещению
+    let v = (c.speed != null && !isNaN(c.speed) && c.speed >= 0) ? c.speed : null;
+    const cur = {lat:c.latitude, lon:c.longitude, t:now};
+
+    if(v === null && lastFix){
+      const d = haversine(lastFix, cur);
+      const dt = (now - lastFix.t)/1000;
+      if(dt > 0) v = d/dt;
+    }
+    if(v === null) v = 0;
+
+    const kmh = v * KMH;
+    speedEl.textContent = Math.round(kmh);
+
+    // индикатор GPS
+    let cls = "bad", word = "слабый";
+    if(acc <= 8){ cls="ok"; word="отличный"; }
+    else if(acc <= 20){ cls="mid"; word="норм"; }
+    gpsdot.className = "dot " + cls;
+    gpsinfo.textContent = "GPS " + word + " · ±" + Math.round(acc) + " м";
+
+    // --- логика замера ---
+    if(armed && !running){
+      // старт по началу движения
+      if(kmh > 3) beginRun(now);
+    }
+
+    if(running){
+      const elapsed = (now - t0)/1000;
+      bigEl.textContent = elapsed.toFixed(2) + " с";
+      if(kmh > vmax*KMH) vmax = v;
+
+      // накопление дистанции
+      if(lastFix){
+        const d = haversine(lastFix, cur);
+        if(d < 200) distAcc += d; // отсекаем телепорты от плохого сигнала
+      }
+
+      if(mode === "accel"){
+        for(const thr of SPEED_KMH){
+          const key = "0-"+thr;
+          if(kmh >= thr && results[key] == null){
+            results[key] = elapsed;
+            setResult(key, fmt(elapsed), thr===100);
+            bigEl.textContent = thr + " км/ч: " + fmt(elapsed);
+          }
+        }
+        // производные сплиты
+        if(results["0-60"]!=null && results["0-100"]!=null && results["60-100"]==null){
+          const s = results["0-100"]-results["0-60"];
+          results["60-100"]=s; setResult("60-100", fmt(s));
+        }
+        if(results["0-100"]!=null && results["0-200"]!=null && results["100-200"]==null){
+          const s = results["0-200"]-results["0-100"];
+          results["100-200"]=s; setResult("100-200", fmt(s));
+        }
+        // автозавершение после 100, если сбросил газ
+        if(results["0-100"]!=null && kmh < 5){
+          finishRun("Готово · разгон");
+        }
+      } else { // dist
+        if(kmh > 5) setResult("vmax", Math.round(vmax*KMH)+" км/ч");
+        for(const dm of DIST_M){
+          const key = "d"+dm;
+          if(distAcc >= dm && results[key] == null){
+            results[key] = elapsed;
+            setResult(key, fmt(elapsed) + " · " + Math.round(kmh) + " км/ч", dm===402);
+            bigEl.textContent = dm + " м: " + fmt(elapsed);
+          }
+        }
+        if(results["d1000"]!=null && kmh < 5){
+          finishRun("Готово · дистанция");
+        }
+      }
+    }
+
+    lastFix = cur;
+  }
+
+  function onErr(err){
+    let msg = "Ошибка GPS";
+    if(err.code === 1) msg = "Нет доступа к геолокации — разреши в настройках";
+    else if(err.code === 2) msg = "Сигнал GPS недоступен";
+    else if(err.code === 3) msg = "GPS не отвечает (таймаут)";
+    setStatus(msg, "done");
+    gpsinfo.textContent = msg;
+  }
+
+  async function requestWake(){
+    try{
+      if("wakeLock" in navigator){
+        wakeLock = await navigator.wakeLock.request("screen");
+      }
+    }catch(e){}
+  }
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.visibilityState === "visible" && watchId !== null) requestWake();
+  });
+
+  function startGPS(){
+    if(!("geolocation" in navigator)){
+      setStatus("Геолокация не поддерживается браузером", "done");
+      return;
+    }
+    if(watchId === null){
+      watchId = navigator.geolocation.watchPosition(onFix, onErr, {
+        enableHighAccuracy:true, maximumAge:0, timeout:15000
+      });
+      requestWake();
+    }
+  }
+
+  startBtn.addEventListener("click", ()=>{
+    startGPS();
+    if(running || armed){ resetMeasure(); }  // повторное нажатие = отмена/перезапуск
+    arm();
+  });
+
+  resetBtn.addEventListener("click", resetMeasure);
+
+  document.querySelectorAll("#mode button").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      document.querySelectorAll("#mode button").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on");
+      mode = b.dataset.m;
+      $("#accelCard").style.display = mode==="accel" ? "" : "none";
+      $("#distCard").style.display  = mode==="dist"  ? "" : "none";
+      resetMeasure();
+    });
+  });
+
+  // прогрев GPS сразу при загрузке, чтобы был сигнал к моменту старта
+  startGPS();
+})();
+</script>
+</body>
+</html>
