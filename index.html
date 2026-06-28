@@ -45,8 +45,8 @@
 
   .sensors{display:flex; align-items:center; justify-content:center; gap:16px; margin-top:12px; font-size:12px; color:var(--muted); flex-wrap:wrap;}
   .sensor{display:flex; align-items:center; gap:7px;}
-  .dot{width:9px; height:9px; border-radius:50%; background:var(--bad); box-shadow:0 0 8px currentColor;}
-  .dot.ok{background:var(--accent);} .dot.mid{background:var(--warn);}
+  .dot{width:9px; height:9px; border-radius:50%; background:var(--bad); color:var(--bad); box-shadow:0 0 8px currentColor;}
+  .dot.ok{background:var(--accent); color:var(--accent);} .dot.mid{background:var(--warn); color:var(--warn);}
 
   .btns{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0;}
   button{
@@ -135,6 +135,10 @@
   .field-unit{color:var(--muted); font-size:14px;}
   .powerout{display:none; text-align:center; font-size:27px; font-weight:800; color:var(--accent); padding:6px 0 14px;}
   .po-sub{display:block; font-size:12px; font-weight:500; color:var(--muted); margin-top:5px;}
+  .resmain{text-align:center; padding:4px 0 16px;}
+  .resmain.empty{display:none;}
+  .rm-time{font-size:52px; font-weight:800; color:var(--accent); line-height:1; letter-spacing:-.02em; font-variant-numeric:tabular-nums;}
+  .rm-lbl{font-size:14px; font-weight:600; color:var(--muted); margin-top:8px;}
 
   .treebox .tree{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;}
   .tlight{width:84px; height:84px; border-radius:50%; background:var(--panel2); border:2px solid var(--line); opacity:.22;}
@@ -296,6 +300,7 @@
   <div class="overlay" id="result">
     <div class="sheet">
       <div class="sheet-head"><span id="resTitle">Результат заезда</span><button class="xbtn" id="closeRes">✕</button></div>
+      <div id="resMain" class="resmain empty"></div>
       <input id="carName" class="field" placeholder="Название авто (напр. BMW E39)">
       <div class="field-row">
         <input id="carMass" class="field" type="number" inputmode="numeric" placeholder="Масса для расчёта л.с. (напр. 1500)">
@@ -379,15 +384,15 @@
   let gpsAcc=999;
 
   // --- состояние замера ---
-  let phase="idle";            // idle | cal | armed | run | done
+  let phase="idle";            // idle | cal | armed | launch | run | tree | done
   let calStart=0;
-  let t0=0, distAcc=0, vmax=0, results={};
+  let t0=0, distAcc=0, results={};
   let crossings={0:0};   // время пересечения порогов скорости (#10)
-  let lastDisp=0;
+  let lastDisp=0, lastBig=0, lastVmaxShown=-1;
   let samples=[], lastSample=0, peakV=0;   // запись графика скорости (#2)
   let gravCal=null, lastSlope=NaN, runAltStart=NaN, runAltEnd=NaN;   // уклон (#6)
   let calGx=0, calGy=0, calGz=0, calGn=0;
-  let actx=null, treeTimers=[], greenTime=0, reactT=NaN, treeActive=false;   // дерево (#9)
+  let actx=null, treeTimers=[], greenTime=0, reactT=NaN;   // дерево (#9)
 
   // --- качество замера (#5) ---
   let q=null;
@@ -418,7 +423,7 @@
   }
 
   function resetMeasure(){
-    phase="idle"; t0=0; distAcc=0; vmax=0; rollDist=0;
+    phase="idle"; t0=0; distAcc=0; rollDist=0; lastVmaxShown=-1;
     vVec={x:0,y:0,z:0}; speedMS=0;
     samples=[]; peakV=0; lastSample=0;
     lastSlope=NaN; runAltStart=NaN; runAltEnd=NaN;
@@ -436,15 +441,15 @@
     if(tMs-lastDisp>80){ speedEl.textContent=Math.round(kmh); lastDisp=tMs; }
 
     if(phase==="armed"){
-      if(kmh>2){ phase="launch"; rollDist=0; vmax=0; if(greenTime) reactT=(tMs-greenTime)/1000; }   // первое движение
+      if(kmh>2){ phase="launch"; rollDist=0; if(greenTime) reactT=(tMs-greenTime)/1000; }   // первое движение
     }
     else if(phase==="launch"){
       if(kmh<1){ phase="armed"; }                        // не поехал / откатился назад
       else {
         if(dt>0 && dt<1) rollDist+=sp*dt;
         const trig = settings.rollout ? (rollDist>=settings.rolloutM) : (kmh>3);
-        if(trig){ phase="run"; t0=tMs; distAcc=0; vmax=0; qReset();
-          samples=[]; lastSample=0; peakV=0; runAltStart=NaN; runAltEnd=NaN; crossings={0:0};
+        if(trig){ phase="run"; t0=tMs; distAcc=0; qReset();
+          samples=[]; lastSample=0; peakV=0; lastVmaxShown=-1; runAltStart=NaN; runAltEnd=NaN; crossings={0:0};
           const sfx = settings.rollout ? " (rollout "+distLabel(settings.rolloutM)+")" : "";
           setStatus((mode==="accel"?"Замер разгона…":"Замер дистанции…")+sfx,"run");
           setStopBtn(true);
@@ -454,8 +459,7 @@
 
     if(phase==="run"){
       const el=(tMs-t0)/1000;
-      bigEl.textContent=el.toFixed(2)+" с"; bigEl.classList.remove("idle");
-      if(sp>vmax) vmax=sp;
+      if(tMs-lastBig>70){ bigEl.textContent=el.toFixed(2)+" с"; bigEl.classList.remove("idle"); lastBig=tMs; }
       if(dt>0 && dt<1) distAcc+=sp*dt;
 
       // запись графика
@@ -480,7 +484,8 @@
         }
         if(settings.speedTargets.every(s=>results[segKey(s)]!=null) && kmh<5) finishRun("Готово · разгон");
       } else {
-        if(kmh>5) setResult("vmax",Math.round(vmax*KMH)+" км/ч");
+        const vmaxR=Math.round(peakV);
+        if(kmh>5 && vmaxR!==lastVmaxShown){ setResult("vmax",vmaxR+" км/ч"); lastVmaxShown=vmaxR; }
         for(const dm of settings.distTargets){
           const k="d"+dm;
           if(distAcc>=dm && results[k]==null){
@@ -566,7 +571,7 @@
     return (deg>0?"+":"")+deg.toFixed(1)+"° ("+(pct>0?"+":"")+pct.toFixed(1)+"%) · "+dir;
   }
 
-  function buildInfo(){
+  function buildInfo(pw){
     const rows=[];
     rows.push(["Время", new Date().toLocaleString("ru-RU")]);
     rows.push(["Режим", mode==="accel"?"Разгон":"Дистанция"]);
@@ -584,7 +589,6 @@
     const mass=parseFloat(settings.mass);
     if(settings.carName) rows.push(["Авто", settings.carName]);
     if(mass>0) rows.push(["Масса", Math.round(mass)+" кг"]);
-    const pw=computePower(mass);
     if(pw){ rows.push(["Мощность ≈", Math.round(pw.crankHp)+" л.с."]); rows.push(["На колёсах ≈", Math.round(pw.wheelHp)+" л.с."]); }
     rows.push(["Достоверность", qVerdict.textContent]);
     return rows.map(r=>`<div class="row"><span class="lbl">${r[0]}</span><span class="val">${r[1]}</span></div>`).join("");
@@ -619,9 +623,26 @@
     return {wheelHp, crankHp};
   }
 
+  // главный результат заезда — крупно вверху окна
+  function mainResult(){
+    if(mode==="accel"){
+      const zero=settings.speedTargets.filter(s=>s.from===0 && results[segKey(s)]!=null).sort((a,b)=>b.to-a.to)[0];
+      if(zero) return {time:results[segKey(zero)], lbl:"0 – "+zero.to+" км/ч"};
+      const any=settings.speedTargets.filter(s=>results[segKey(s)]!=null).sort((a,b)=>(b.to-b.from)-(a.to-a.from))[0];
+      if(any) return {time:results[segKey(any)], lbl:segLabel(any)};
+    } else {
+      const done=settings.distTargets.filter(dm=>results["d"+dm]!=null).sort((a,b)=>b-a)[0];
+      if(done!=null) return {time:results["d"+done], lbl:distLabelM(done)};
+    }
+    return null;
+  }
   function refreshResult(){
-    resInfo.innerHTML=buildInfo();
+    const m=mainResult();
+    if(m) resMain.innerHTML="<div class='rm-time'>"+m.time.toFixed(2)+" с</div><div class='rm-lbl'>"+m.lbl+"</div>";
+    else  resMain.innerHTML="<div class='rm-time'>"+Math.round(peakV)+" км/ч</div><div class='rm-lbl'>макс. скорость</div>";
+    resMain.classList.remove("empty");
     const p=computePower(parseFloat(settings.mass));
+    resInfo.innerHTML=buildInfo(p);
     if(p){
       powerOut.innerHTML="≈ "+Math.round(p.crankHp)+" л.с.<span class='po-sub'>на колёсах ~"+Math.round(p.wheelHp)+" · грубая оценка</span>";
       powerOut.style.display="block";
@@ -673,9 +694,9 @@
       o.start(t); o.stop(t+ms/1000+0.03);
     }catch(e){}
   }
-  function clearTree(){ treeTimers.forEach(clearTimeout); treeTimers=[]; treeActive=false; }
+  function clearTree(){ treeTimers.forEach(clearTimeout); treeTimers=[]; }
   function runTree(){
-    treeActive=true; greenTime=0; reactT=NaN;
+    greenTime=0; reactT=NaN;
     ["t1","t2","t3","tg"].forEach(id=>$("#"+id).classList.remove("lit"));
     treeMsg.textContent="Приготовься…";
     treeEl.classList.add("open");
@@ -1055,7 +1076,7 @@
   });
 
   // ----- окно результата -----
-  const resultEl=$("#result"), resTitle=$("#resTitle"), resGraph=$("#resGraph"), resInfo=$("#resInfo");
+  const resultEl=$("#result"), resTitle=$("#resTitle"), resGraph=$("#resGraph"), resInfo=$("#resInfo"), resMain=$("#resMain");
   const carNameEl=$("#carName"), carMassEl=$("#carMass"), powerOut=$("#powerOut");
   const treeEl=$("#tree"), treeMsg=$("#treeMsg");
   treeEl.addEventListener("click",()=>{ if(greenTime===0){ resetMeasure(); } });
