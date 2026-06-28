@@ -388,7 +388,8 @@
   let calStart=0;
   let t0=0, distAcc=0, results={};
   let crossings={0:0};   // время пересечения порогов скорости (#10)
-  let lastDisp=0, lastBig=0, lastVmaxShown=-1;
+  let vStart=0;          // скорость в момент старта замера (км/ч) — для старта с хода
+  let lastDisp=0, lastBig=0, lastVmaxShown=-1, dropT=0;
   let samples=[], lastSample=0, peakV=0;   // запись графика скорости (#2)
   let gravCal=null, lastSlope=NaN, runAltStart=NaN, runAltEnd=NaN;   // уклон (#6)
   let calGx=0, calGy=0, calGz=0, calGn=0;
@@ -423,7 +424,7 @@
   }
 
   function resetMeasure(){
-    phase="idle"; t0=0; distAcc=0; rollDist=0; lastVmaxShown=-1;
+    phase="idle"; t0=0; distAcc=0; rollDist=0; lastVmaxShown=-1; dropT=0;
     vVec={x:0,y:0,z:0}; speedMS=0;
     samples=[]; peakV=0; lastSample=0;
     lastSlope=NaN; runAltStart=NaN; runAltEnd=NaN;
@@ -449,7 +450,8 @@
         if(dt>0 && dt<1) rollDist+=sp*dt;
         const trig = settings.rollout ? (rollDist>=settings.rolloutM) : (kmh>3);
         if(trig){ phase="run"; t0=tMs; distAcc=0; qReset();
-          samples=[]; lastSample=0; peakV=0; lastVmaxShown=-1; runAltStart=NaN; runAltEnd=NaN; crossings={0:0};
+          samples=[]; lastSample=0; peakV=0; lastVmaxShown=-1; dropT=0; runAltStart=NaN; runAltEnd=NaN;
+          vStart=kmh; crossings=(vStart<2)?{0:0}:{};   // старт с хода: пороги ниже стартовой скорости не меряем
           const sfx = settings.rollout ? " (rollout "+distLabel(settings.rolloutM)+")" : "";
           setStatus((mode==="accel"?"Замер разгона…":"Замер дистанции…")+sfx,"run");
           setStopBtn(true);
@@ -464,15 +466,19 @@
 
       // запись графика
       if(tMs-lastSample>60){ samples.push({t:el, v:kmh}); lastSample=tMs; if(samples.length>1500) samples.shift(); }
-      // авто-стоп: скорость пошла вниз от пика (сброс газа)
-      if(kmh>peakV) peakV=kmh;
-      if(peakV>20 && kmh < peakV-6){ finishRun(mode==="accel"?"Готово · скорость падает":"Готово · сброс газа"); return; }
+      // авто-стоп: скорость устойчиво пошла вниз от пика (сброс газа).
+      // требуем падение >8 км/ч, которое держится >0.5с — чтобы кочка/шум не обрывали замер
+      if(kmh>peakV){ peakV=kmh; dropT=0; }
+      else if(peakV>20 && kmh < peakV-8){
+        if(dropT===0) dropT=tMs;
+        else if(tMs-dropT>500){ finishRun(mode==="accel"?"Готово · скорость падает":"Готово · сброс газа"); return; }
+      } else dropT=0;
 
       if(mode==="accel"){
         // отмечаем пересечения всех нужных порогов
         for(const s of settings.speedTargets){
-          if(s.from>0 && crossings[s.from]==null && kmh>=s.from) crossings[s.from]=el;
-          if(s.to>0   && crossings[s.to]==null   && kmh>=s.to)   crossings[s.to]=el;
+          if(s.from>vStart && crossings[s.from]==null && kmh>=s.from) crossings[s.from]=el;
+          if(s.to>vStart   && crossings[s.to]==null   && kmh>=s.to)   crossings[s.to]=el;
         }
         // считаем сегменты from→to (from=0 → от старта)
         for(const s of settings.speedTargets){
@@ -576,6 +582,7 @@
     rows.push(["Время", new Date().toLocaleString("ru-RU")]);
     rows.push(["Режим", mode==="accel"?"Разгон":"Дистанция"]);
     if(settings.rollout) rows.push(["Rollout", distLabel(settings.rolloutM)]);
+    if(vStart>2) rows.push(["Старт с хода", Math.round(vStart)+" км/ч"]);
     if(!isNaN(reactT)) rows.push(["Реакция (дерево)", (reactT<0?"фальстарт":reactT.toFixed(2)+" с")]);
     if(mode==="accel"){
       settings.speedTargets.forEach(s=>{ const k=segKey(s); if(results[k]!=null) rows.push([segLabel(s), results[k].toFixed(2)+" с"]); });
@@ -807,6 +814,9 @@
     }
     if(s===null) s=0;
 
+    // спидометр живёт от GPS, пока замер не идёт (до «Старт», в покое, после заезда)
+    if(phase==="idle"||phase==="done"){ speedEl.textContent=Math.round(s*KMH); }
+
     // индикатор GPS
     let cls="bad",w="слабый";
     if(gpsAcc<=8){cls="ok";w="точный";} else if(gpsAcc<=20){cls="mid";w="норм";}
@@ -826,15 +836,15 @@
     }
 
     if(fusion){
-      if((phase==="armed"||phase==="tree") && s<0.6){ vVec.x*=0.2; vVec.y*=0.2; vVec.z*=0.2; } // гасим дрейф на стоянке
-      // коррекция величины вектора скорости по GPS (убираем дрейф интегрирования)
-      if(phase==="run"){
+      // GPS задаёт абсолютный уровень скорости во всех активных фазах,
+      // акселерометр только сглаживает между секундными фиксами (#фьюжн)
+      if(phase==="armed"||phase==="launch"||phase==="tree"||phase==="run"){
         const mag=Math.hypot(vVec.x,vVec.y,vVec.z);
-        if(q){ const rel=Math.abs(s-mag)/Math.max(s,2); if(rel>q.corrMax) q.corrMax=rel; }
-        if(s<0.8){ vVec={x:0,y:0,z:0}; }
-        else if(mag>0.05){ const nm=mag+0.2*(s-mag), k=nm/mag; vVec.x*=k; vVec.y*=k; vVec.z*=k; }
-        else { vVec={x:s,y:0,z:0}; }
-        updateQuality();
+        if(phase==="run" && q){ const rel=Math.abs(s-mag)/Math.max(s,2); if(rel>q.corrMax) q.corrMax=rel; }
+        if(s<0.8){ vVec={x:0,y:0,z:0}; }                                  // стоим — гасим дрейф
+        else if(mag>0.05){ const nm=mag+0.5*(s-mag), k=nm/mag; vVec.x*=k; vVec.y*=k; vVec.z*=k; }  // тянем к GPS
+        else { vVec={x:s,y:0,z:0}; }                                      // вектор пустой — засеваем из GPS
+        if(phase==="run") updateQuality();
       }
     } else {
       // без акселерометра — старый путь, считаем прямо по GPS
