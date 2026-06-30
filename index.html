@@ -390,7 +390,7 @@
   let crossings={0:0};   // время пересечения порогов скорости (#10)
   let vStart=0;          // скорость в момент старта замера (км/ч) — для старта с хода
   let lastDisp=0, lastBig=0, lastVmaxShown=-1, dropT=0;
-  let samples=[], lastSample=0, peakV=0;   // запись графика скорости (#2)
+  let samples=[], lastSample=0, peakV=0, gpsVmax=0;   // запись графика скорости (#2), пик по GPS
   let gravCal=null, lastSlope=NaN, runAltStart=NaN, runAltEnd=NaN;   // уклон (#6)
   let calGx=0, calGy=0, calGz=0, calGn=0;
   let actx=null, treeTimers=[], greenTime=0, reactT=NaN;   // дерево (#9)
@@ -426,7 +426,7 @@
   function resetMeasure(){
     phase="idle"; t0=0; distAcc=0; rollDist=0; lastVmaxShown=-1; dropT=0;
     vVec={x:0,y:0,z:0}; speedMS=0;
-    samples=[]; peakV=0; lastSample=0;
+    samples=[]; peakV=0; gpsVmax=0; lastSample=0; vStart=0;
     lastSlope=NaN; runAltStart=NaN; runAltEnd=NaN;
     clearTree(); if(treeEl) treeEl.classList.remove("open"); greenTime=0; reactT=NaN;
     q=null; qualCard.style.display="none";
@@ -442,7 +442,7 @@
     if(tMs-lastDisp>80){ speedEl.textContent=Math.round(kmh); lastDisp=tMs; }
 
     if(phase==="armed"){
-      if(kmh>2){ phase="launch"; rollDist=0; if(greenTime) reactT=(tMs-greenTime)/1000; }   // первое движение
+      if(kmh>2){ phase="launch"; rollDist=0; vStart=kmh; if(greenTime) reactT=(tMs-greenTime)/1000; }   // первое движение
     }
     else if(phase==="launch"){
       if(kmh<1){ phase="armed"; }                        // не поехал / откатился назад
@@ -451,7 +451,7 @@
         const trig = settings.rollout ? (rollDist>=settings.rolloutM) : (kmh>3);
         if(trig){ phase="run"; t0=tMs; distAcc=0; qReset();
           samples=[]; lastSample=0; peakV=0; lastVmaxShown=-1; dropT=0; runAltStart=NaN; runAltEnd=NaN;
-          vStart=kmh; crossings=(vStart<2)?{0:0}:{};   // старт с хода: пороги ниже стартовой скорости не меряем
+          gpsVmax=0; crossings=(vStart<5)?{0:0}:{};   // с места → нулевая точка; с хода → пороги ниже vStart не меряем
           const sfx = settings.rollout ? " (rollout "+distLabel(settings.rolloutM)+")" : "";
           setStatus((mode==="accel"?"Замер разгона…":"Замер дистанции…")+sfx,"run");
           setStopBtn(true);
@@ -511,6 +511,7 @@
 
   function finishRun(reason,ok){
     if(phase==="done") return;
+    if(gpsVmax>peakV) peakV=gpsVmax;   // честная максималка по GPS
     if(t0) samples.push({t:(now()-t0)/1000, v:speedMS*KMH});
     phase="done"; setStatus(reason,"done");
     setStopBtn(false);
@@ -829,6 +830,8 @@
       if(q.lastGpsT>0 && (cur.t-q.lastGpsT)>2500) q.gpsGaps++;
       q.lastGpsT=cur.t;
     }
+    // честный пик максималки — прямо по GPS, даже если экран отстаёт
+    if(phase==="run"){ const gk=s*KMH; if(gk>gpsVmax) gpsVmax=gk; }
     // высота для уклона на чистом GPS (#6)
     if(phase==="run" && settings.slope && !fusion && c.altitude!=null && !isNaN(c.altitude)){
       if(isNaN(runAltStart)) runAltStart=c.altitude;
@@ -842,7 +845,7 @@
         const mag=Math.hypot(vVec.x,vVec.y,vVec.z);
         if(phase==="run" && q){ const rel=Math.abs(s-mag)/Math.max(s,2); if(rel>q.corrMax) q.corrMax=rel; }
         if(s<0.8){ vVec={x:0,y:0,z:0}; }                                  // стоим — гасим дрейф
-        else if(mag>0.05){ const nm=mag+0.5*(s-mag), k=nm/mag; vVec.x*=k; vVec.y*=k; vVec.z*=k; }  // тянем к GPS
+        else if(mag>0.05){ const nm=mag+0.85*(s-mag), k=nm/mag; vVec.x*=k; vVec.y*=k; vVec.z*=k; }  // жёстко тянем к GPS
         else { vVec={x:s,y:0,z:0}; }                                      // вектор пустой — засеваем из GPS
         if(phase==="run") updateQuality();
       }
